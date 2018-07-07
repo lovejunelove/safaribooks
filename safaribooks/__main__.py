@@ -22,23 +22,17 @@ def download_epub(args):
         with open(args.cookie) as fp:
             cookie = fp.read()
 
-    book_ids = map(lambda x: int(x.strip()), args.book_id.split(','))
-    processes = []
-
-    for book_id in book_ids:
-        process = CrawlerProcess(get_project_settings())
-        process.crawl(
-            'SafariBooks',
-            user=args.user,
-            password=args.password,
-            cookie=cookie,
-            bookid=book_id,
-            output_directory=args.output_directory
-        )
-        process.start()
-        processes.append(process)
-
-    return processes
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(
+        'SafariBooks',
+        user=args.user,
+        password=args.password,
+        cookie=cookie,
+        bookid=args.book_id,
+        output_directory=args.output_directory
+    )
+    process.start()
+    return process
 
 
 def convert_to_mobi(args):
