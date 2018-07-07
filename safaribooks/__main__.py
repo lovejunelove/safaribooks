@@ -17,16 +17,17 @@ def download_epub(args):
     if not args.book_id:
         raise ValueError('argument -b/--book-id is required for downloading')
 
+    cookie = None
     if args.cookie:
         with open(args.cookie) as fp:
-            args.cookie = fp.read()
+            cookie = fp.read()
 
     process = CrawlerProcess(get_project_settings())
     process.crawl(
         'SafariBooks',
         user=args.user,
         password=args.password,
-        cookie=args.cookie,
+        cookie=cookie,
         bookid=args.book_id,
         output_directory=args.output_directory
     )
