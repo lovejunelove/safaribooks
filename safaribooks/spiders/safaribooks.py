@@ -239,6 +239,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
 
         self.book_name = toc['title_safe']
         self.book_title = re.sub(r'["%*/:<>?\\|~\s]', r'_', toc['title'])  # to be used for filename
+        self.book_title = "".join([ch for ch in self.book_title if ord(ch) <= 128])
 
         cover_path, = re.match(
             r'<img src="(.*?)" alt.+',
