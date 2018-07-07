@@ -17,6 +17,9 @@ def download_epub(args):
     if not args.book_id:
         raise ValueError('argument -b/--book-id is required for downloading')
 
+    if args.cookie:
+        with open(args.cookie) as fp:
+            args.cookie = fp.read()
 
     process = CrawlerProcess(get_project_settings())
     process.crawl(
