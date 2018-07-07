@@ -47,6 +47,7 @@ def decode(s):
         return s
 
 class SafariBooksSpider(scrapy.spiders.Spider):
+    search_url = 'https://www.safaribooksonline.com/api/v2/search/'
     toc_url = 'https://www.safaribooksonline.com/nest/epub/toc/?book_id='
     name = 'SafariBooks'
     # allowed_domains = []
@@ -59,9 +60,11 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         password,
         cookie,
         bookid,
-        output_directory=None
+        output_directory=None,
+        query=None
     ):
         self.user = user
+        self.query = query
         self.password = password
         self.cookie = cookie
         self.bookid = str(bookid)
@@ -103,7 +106,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
               callback=self.after_login
         )
 
-
     def after_login(self, response):
         # Loose rule to decide if user signed in successfully.
         if response.status == 401:
@@ -112,10 +114,39 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         elif response.status != 200:
             self.logger.error('Something went wrong')
             return
+
+        if self.query:
+            post_body = {
+                "query": self.query,
+                "extended_publisher_data": True,
+                "highlight": "true",
+                "is_academic_institution_account": "false",
+                "source": "user",
+                "include_assessments": False,
+                "include_case_studies": True,
+                "include_courses": True,
+                "include_orioles": True,
+                "include_playlists": True,
+                "formats": ["book"],
+                "topics": [],
+                "publishers": [],
+                "languages": [],
+                "sort": "report_score"
+            }
+            yield scrapy.Request(
+                self.search_url,
+                method='POST',
+                body=json.dumps(post_body),
+                callback=self.search_books,
+            )
+
         yield scrapy.Request(
             self.toc_url + self.bookid,
             callback=self.parse_toc,
         )
+
+    def search_books(self, response):
+        print(response.body)
 
     def parse_cover_img(self, name, response):
         # inspect_response(response, self)
@@ -163,7 +194,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         # and share them in the downloaded files. But you need to carefully calculates the relative path.
         # For now just append to self.style
         self.style += response.body
-
 
     def parse_page(self, title, bookid, path, images, style, response):
         template = Template(PAGE_TEMPLATE)
