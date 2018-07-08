@@ -12,7 +12,7 @@ from jinja2 import Template
 from bs4 import BeautifulSoup
 
 from ..db_session import SESSION, with_transaction
-from ..models import ModelBooks
+from ..models import ModelBooks, BookStatus
 from .. import utils
 
 DEFAULT_STYLE = """
@@ -72,7 +72,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.query = query
         self.password = password
         self.cookie = cookie
-        self.book_id = str(book_id) if book_id else None
+        self.book_id = ModelBooks.get_a_book() if query is None and book_id is None else book_id
         self.book_name = ''
         self.book_title = ''
         self.output_directory = utils.mkdirp(
@@ -122,12 +122,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             self.logger.error('Something went wrong')
             return
 
-        if self.book_id:
-            yield scrapy.Request(
-                self.toc_url + self.book_id,
-                callback=self.parse_toc,
-            )
-        else:
+        if self.query:
             post_body = {
                 "query": self.query,
                 "extended_publisher_data": "true",
@@ -152,6 +147,11 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 body=json.dumps(post_body),
                 callback=partial(self.query_books, post_body),
                 headers={"content-type": "application/json"}
+            )
+        else:
+            yield scrapy.Request(
+                self.toc_url + self.book_id,
+                callback=self.parse_toc,
             )
 
     @with_transaction
@@ -337,6 +337,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             self.logger.info(
                 'Did not even got toc, ignore generated file operation.'
             )
+            ModelBooks.finish(self.book_id, BookStatus.NOT_DOWNLOADED)
             return
 
         zip_path = shutil.make_archive(self.book_name, 'zip', self.tmpdir)
@@ -349,3 +350,4 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.logger.info('Moving {0} to {1}'.format(zip_path, self.epub_path))
         shutil.move(zip_path, self.epub_path)
         shutil.rmtree(self.tmpdir, ignore_errors=True)
+        ModelBooks.finish(self.book_id)
