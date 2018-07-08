@@ -92,7 +92,7 @@ DOWNLOAD_DELAY = 0.25
 DATABASE = {
     'ENGINE': 'pg',
     'NAME': 'safaribooks',
-    'USER': 'aa',
+    'USER': 'postgres',
     'PASSWORD': '',
     'HOST': 'aa-postgres',
     'PORT': '5432',
