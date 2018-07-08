@@ -11,6 +11,8 @@ import scrapy
 from jinja2 import Template
 from bs4 import BeautifulSoup
 
+from ..db_session import SESSION, with_transaction
+from ..models import ModelBooks
 from .. import utils
 
 DEFAULT_STYLE = """
@@ -78,6 +80,8 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self._stage_toc = False
         self.tmpdir = tempfile.mkdtemp()
         self._initialize_tempdir()
+        self._books_dict = {}
+        self._scraped_books = 0
 
     def _initialize_tempdir(self):
         self.logger.info(
@@ -93,7 +97,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         if self.cookie is not None:
             cookies = dict(x.strip().split('=') for x in self.cookie.split(';'))
 
-            return scrapy.Request(url=self.host + 'home', 
+            return scrapy.Request(url=self.host + 'home',
                 callback=self.after_login,
                 cookies=cookies,
                 headers={
@@ -115,38 +119,83 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             self.logger.error('Something went wrong')
             return
 
+        self.query = 'mining data'
         if self.query:
+            sort_by_score = "report_score"
+            sort_by_relevance = "relevance"
             post_body = {
                 "query": self.query,
-                "extended_publisher_data": True,
+                "extended_publisher_data": "true",
                 "highlight": "true",
                 "is_academic_institution_account": "false",
                 "source": "user",
-                "include_assessments": False,
-                "include_case_studies": True,
-                "include_courses": True,
-                "include_orioles": True,
-                "include_playlists": True,
+                "include_assessments": "false",
+                "include_case_studies": "true",
+                "include_courses": "true",
+                "include_orioles": "true",
+                "include_playlists": "true",
                 "formats": ["book"],
                 "topics": [],
                 "publishers": [],
                 "languages": [],
-                "sort": "report_score"
+                "sort": sort_by_score,
+                "page": 0
             }
             yield scrapy.Request(
                 self.search_url,
                 method='POST',
                 body=json.dumps(post_body),
-                callback=self.search_books,
+                callback=partial(self.query_books, post_body),
+                headers={"content-type": "application/json"}
+            )
+        else:
+            yield scrapy.Request(
+                self.toc_url + self.bookid,
+                callback=self.parse_toc,
             )
 
-        yield scrapy.Request(
-            self.toc_url + self.bookid,
-            callback=self.parse_toc,
-        )
+    @with_transaction
+    def save_books_in_db(self, books_dict):
+        models = []
+        for book in books_dict.values():
+            models.append(ModelBooks(
+                safari_book_id=int(book['archive_id']),
+                reviews=book.get('number_of_reviews', 0),
+                rating=book.get('average_rating', 0),
+                popularity=book.get('popularity', 0),
+                report_score=book.get('report_score', 0),
+                pages=book.get('virtual_pages', 0),
+                title=book.get('title', ''),
+                language=book.get('language', ''),
+                authors=book.get('authors', []),
+                publishers=book.get('publishers', []),
+                tag=[self.query],
+                description=book.get('description', ''),
+                url=book.get('url', ''),
+                web_url=book.get('web_url', ''),
+            ))
 
-    def search_books(self, response):
-        print(response.body)
+        SESSION.add_all(models)
+        SESSION.flush()
+
+    def query_books(self, post_body, response):
+        response = json.loads(response.body)
+        total_books = response['total']
+        self._scraped_books += len(response['results'])
+        for book in response['results']:
+            self._books_dict[book['archive_id']] = book
+        print(total_books, len(self._books_dict))
+        if self._scraped_books < total_books:
+            post_body['page'] += 1
+            yield scrapy.Request(
+                self.search_url,
+                method='POST',
+                body=json.dumps(post_body),
+                callback=partial(self.query_books, post_body),
+                headers={"content-type": "application/json"}
+            )
+        else:
+            self.save_books_in_db(self._books_dict)
 
     def parse_cover_img(self, name, response):
         # inspect_response(response, self)
