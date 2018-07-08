@@ -2,6 +2,8 @@ import argparse
 import glob
 import os
 import subprocess
+from time import sleep
+import multiprocessing as mp
 
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
@@ -20,18 +22,27 @@ def download_epub(args):
         with open(args.cookie) as fp:
             cookie = fp.read()
 
-    process = CrawlerProcess(get_project_settings())
-    process.crawl(
-        'SafariBooks',
-        user=args.user,
-        password=args.password,
-        cookie=cookie,
-        book_id=str(args.book_id) if args.book_id else None,
-        output_directory=args.output_directory,
-        query=args.query
-    )
-    process.start()
-    return process
+    def _crawl(queue):
+        process = CrawlerProcess(get_project_settings())
+        ret = process.crawl(
+            'SafariBooks',
+            user=args.user,
+            password=args.password,
+            cookie=cookie,
+            book_id=str(args.book_id) if args.book_id else None,
+            output_directory=args.output_directory,
+            query=args.query
+        )
+        process.start()
+        queue.put(ret)
+
+    while args.loop:
+        q = mp.Queue()
+        p = mp.Process(target=_crawl, args=(q,))
+        p.start()
+        q.get()
+        p.join()
+        sleep(1)
 
 
 def convert_to_mobi(args):
@@ -96,6 +107,12 @@ parser.add_argument(
     '-q',
     '--query',
     help='Query conditions',
+)
+parser.add_argument(
+    '-l',
+    '--loop',
+    help='Query conditions',
+    action="store_true"
 )
 
 subparsers = parser.add_subparsers()
