@@ -148,7 +148,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 callback=partial(self.query_books, post_body),
                 headers={"content-type": "application/json"}
             )
-        else:
+        elif self.book_id:
             yield scrapy.Request(
                 self.toc_url + self.book_id,
                 callback=self.parse_toc,
