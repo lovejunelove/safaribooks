@@ -36,13 +36,16 @@ def download_epub(args):
         process.start()
         queue.put(ret)
 
-    while args.loop:
+    while True:
         q = mp.Queue()
         p = mp.Process(target=_crawl, args=(q,))
         p.start()
         q.get()
         p.join()
         sleep(1)
+
+        if not args.loop:
+            break
 
 
 def convert_to_mobi(args):
