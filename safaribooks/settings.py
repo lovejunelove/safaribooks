@@ -88,3 +88,13 @@ DOWNLOAD_DELAY = 0.25
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+DATABASE = {
+    'ENGINE': 'pg',
+    'NAME': 'safaribooks',
+    'USER': 'aa',
+    'PASSWORD': '',
+    'HOST': 'aa-postgres',
+    'PORT': '5432',
+    'OPTIONS': {'autocommit': True},
+}

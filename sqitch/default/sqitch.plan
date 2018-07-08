@@ -1,0 +1,5 @@
+%syntax-version=1.0.0
+%project=default
+%uri=https://github.com/lovejunelove/safaribooks
+
+init_tables 2018-07-07T09:55:37Z junliu <junliu@junliu-2.local> # Add schema for all tables.

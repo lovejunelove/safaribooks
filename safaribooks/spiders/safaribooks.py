@@ -11,6 +11,8 @@ import scrapy
 from jinja2 import Template
 from bs4 import BeautifulSoup
 
+from ..db_session import SESSION, with_transaction
+from ..models import ModelBooks, BookStatus
 from .. import utils
 
 DEFAULT_STYLE = """
@@ -47,50 +49,58 @@ def decode(s):
         return s
 
 class SafariBooksSpider(scrapy.spiders.Spider):
+    search_url = 'https://www.safaribooksonline.com/api/v2/search/'
     toc_url = 'https://www.safaribooksonline.com/nest/epub/toc/?book_id='
     name = 'SafariBooks'
     # allowed_domains = []
     start_urls = ['https://www.safaribooksonline.com/']
     host = 'https://www.safaribooksonline.com/'
+    MAX_NUMBER_OF_BOOKS = 100
+    sort_by_score = "report_score"
+    sort_by_relevance = "relevance"
 
     def __init__(
         self,
         user,
         password,
         cookie,
-        bookid,
-        output_directory=None
+        book_id,
+        output_directory=None,
+        query=None
     ):
         self.user = user
+        self.query = query
         self.password = password
         self.cookie = cookie
-        self.bookid = str(bookid)
+        self.book_id = ModelBooks.get_a_book() if query is None and book_id is None else book_id
+        self.book_name = ''
+        self.book_title = ''
         self.output_directory = utils.mkdirp(
             output_directory or tempfile.mkdtemp()
         )
-        self.book_name = ''
         self.epub_path = ''
         self.style = ''
         self.info = {}
         self._stage_toc = False
-        self.tmpdir = tempfile.mkdtemp()
+        self.tmpdir = None
+        self._books_dict = {}
+        self._scraped_books = 0
         self._initialize_tempdir()
 
     def _initialize_tempdir(self):
+        self.tmpdir = tempfile.mkdtemp()
         self.logger.info(
             'Using `{0}` as temporary directory'.format(self.tmpdir)
         )
-
         # `copytree` doesn't like when the target directory already exists.
         os.rmdir(self.tmpdir)
-
         shutil.copytree(utils.pkg_path('data/'), self.tmpdir)
 
     def parse(self, response):
         if self.cookie is not None:
             cookies = dict(x.strip().split('=') for x in self.cookie.split(';'))
 
-            return scrapy.Request(url=self.host + 'home', 
+            return scrapy.Request(url=self.host + 'home',
                 callback=self.after_login,
                 cookies=cookies,
                 headers={
@@ -103,7 +113,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
               callback=self.after_login
         )
 
-
     def after_login(self, response):
         # Loose rule to decide if user signed in successfully.
         if response.status == 401:
@@ -112,10 +121,91 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         elif response.status != 200:
             self.logger.error('Something went wrong')
             return
-        yield scrapy.Request(
-            self.toc_url + self.bookid,
-            callback=self.parse_toc,
-        )
+
+        if self.query:
+            post_body = {
+                "query": self.query,
+                "extended_publisher_data": "true",
+                "highlight": "true",
+                "is_academic_institution_account": "false",
+                "source": "user",
+                "include_assessments": "false",
+                "include_case_studies": "true",
+                "include_courses": "true",
+                "include_orioles": "true",
+                "include_playlists": "true",
+                "formats": ["book"],
+                "topics": [],
+                "publishers": [],
+                "languages": [],
+                "sort": self.sort_by_relevance,
+                "page": 0
+            }
+            yield scrapy.Request(
+                self.search_url,
+                method='POST',
+                body=json.dumps(post_body),
+                callback=partial(self.query_books, post_body),
+                headers={"content-type": "application/json"}
+            )
+        else:
+            yield scrapy.Request(
+                self.toc_url + self.book_id,
+                callback=self.parse_toc,
+            )
+
+    @with_transaction
+    def save_books_in_db(self, books_dict):
+        existed_models = SESSION.query(ModelBooks).filter(ModelBooks.safari_book_id.in_(books_dict.keys())).all()
+        existed_book_ids = []
+        for model in existed_models:
+            tags = set(model.tags)
+            tags.add(self.query)
+            model.tags = list(tags)
+            existed_book_ids.append(model.safari_book_id)
+
+        new_book_ids = set(books_dict.keys()) - set(existed_book_ids)
+        new_models = []
+        for book_id in new_book_ids:
+            book = books_dict[book_id]
+            new_models.append(ModelBooks(
+                safari_book_id=book['archive_id'],
+                reviews=book.get('number_of_reviews', 0),
+                rating=book.get('average_rating', 0),
+                popularity=book.get('popularity', 0),
+                report_score=book.get('report_score', 0),
+                pages=book.get('virtual_pages', 0),
+                title=book.get('title', ''),
+                language=book.get('language', ''),
+                authors=book.get('authors', []),
+                publishers=book.get('publishers', []),
+                tags=[self.query],
+                description=book.get('description', ''),
+                url=book.get('url', ''),
+                web_url=book.get('web_url', ''),
+            ))
+
+        SESSION.add_all(new_models)
+        SESSION.flush()
+        return new_book_ids
+
+    def query_books(self, post_body, response):
+        response = json.loads(response.body)
+        total_books = response['total']
+        self._scraped_books += len(response['results'])
+        for book in response['results']:
+            self._books_dict[book['archive_id']] = book
+        if self._scraped_books < min(total_books, self.MAX_NUMBER_OF_BOOKS):
+            post_body['page'] += 1
+            yield scrapy.Request(
+                self.search_url,
+                method='POST',
+                body=json.dumps(post_body),
+                callback=partial(self.query_books, post_body),
+                headers={"content-type": "application/json"}
+            )
+        else:
+            self.save_books_in_db(self._books_dict)
 
     def parse_cover_img(self, name, response):
         # inspect_response(response, self)
@@ -133,7 +223,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         with open(img_path, 'wb') as fh:
             fh.write(response.body)
 
-    def parse_page_json(self, title, bookid, response):
+    def parse_page_json(self, title, book_id, response):
         page_json = json.loads(response.body)
 
         style_sheets = page_json.get('stylesheets', [])
@@ -151,7 +241,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             callback=partial(
                 self.parse_page,
                 title,
-                bookid,
+                book_id,
                 page_json['full_path'],
                 page_json['images'],
                 style_sheets_paths
@@ -164,8 +254,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         # For now just append to self.style
         self.style += response.body
 
-
-    def parse_page(self, title, bookid, path, images, style, response):
+    def parse_page(self, title, book_id, path, images, style, response):
         template = Template(PAGE_TEMPLATE)
 
         # path might have nested directory
@@ -192,7 +281,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             img = img.replace('../', '')
 
             yield scrapy.Request(
-                '/'.join((self.host, 'library/view', title, bookid, img)),
+                '/'.join((self.host, 'library/view', title, book_id, img)),
                 callback=partial(self.parse_content_img, img),
             )
 
@@ -208,7 +297,8 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self._stage_toc = True
 
         self.book_name = toc['title_safe']
-        self.book_title = re.sub(r'["%*/:<>?\\|~\s]', r'_', toc['title'])  # to be used for filename
+        book_title = re.sub(r'["%*/:<>?\\|~\s]', r'_', toc['title'])  # to be used for filename
+        self.book_title = "".join([ch for ch in book_title if 32 <= ord(ch) <= 128])
 
         cover_path, = re.match(
             r'<img src="(.*?)" alt.+',
@@ -247,6 +337,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             self.logger.info(
                 'Did not even got toc, ignore generated file operation.'
             )
+            ModelBooks.finish(self.book_id, BookStatus.NOT_DOWNLOADED)
             return
 
         zip_path = shutil.make_archive(self.book_name, 'zip', self.tmpdir)
@@ -254,7 +345,9 @@ class SafariBooksSpider(scrapy.spiders.Spider):
 
         self.epub_path = os.path.join(
             self.output_directory,
-            '{0}-{1}.epub'.format(self.book_title, self.bookid),
+            '{0}-{1}.epub'.format(self.book_title, self.book_id),
         )
         self.logger.info('Moving {0} to {1}'.format(zip_path, self.epub_path))
         shutil.move(zip_path, self.epub_path)
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        ModelBooks.finish(self.book_id)

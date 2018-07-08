@@ -14,18 +14,21 @@ def download_epub(args):
         raise ValueError('argument -p/--password with -u/--user or -c/--cookie is required for downloading')
     if args.password and not args.user:
         raise ValueError('argument -u/--user with -p/--password or -c/--cookie is required for downloading')
-    if not args.book_id:
-        raise ValueError('argument -b/--book-id is required for downloading')
 
+    cookie = None
+    if args.cookie:
+        with open(args.cookie) as fp:
+            cookie = fp.read()
 
     process = CrawlerProcess(get_project_settings())
     process.crawl(
         'SafariBooks',
         user=args.user,
         password=args.password,
-        cookie=args.cookie,
-        bookid=args.book_id,
-        output_directory=args.output_directory
+        cookie=cookie,
+        book_id=str(args.book_id) if args.book_id else None,
+        output_directory=args.output_directory,
+        query=args.query
     )
     process.start()
     return process
@@ -88,6 +91,11 @@ parser.add_argument(
     '-c',
     '--cookie',
     help='Safari Books Online SSO cookie',
+)
+parser.add_argument(
+    '-q',
+    '--query',
+    help='Query conditions',
 )
 
 subparsers = parser.add_subparsers()
