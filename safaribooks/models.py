@@ -41,7 +41,7 @@ class ModelBooks(BASE):
     @staticmethod
     @with_transaction
     def get_a_book():
-        model = SESSION.query(ModelBooks).filter(ModelBooks.status == BookStatus.NOT_DOWNLOADED).one_or_none()
+        model = SESSION.query(ModelBooks).filter(ModelBooks.status == BookStatus.NOT_DOWNLOADED).limit(1).one_or_none()
         if not model:
             return None
 
