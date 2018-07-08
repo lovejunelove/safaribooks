@@ -55,7 +55,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
     # allowed_domains = []
     start_urls = ['https://www.safaribooksonline.com/']
     host = 'https://www.safaribooksonline.com/'
-    MAX_NUMBER_OF_BOOKS = 5
+    MAX_NUMBER_OF_BOOKS = 100
     sort_by_score = "report_score"
     sort_by_relevance = "relevance"
 
@@ -72,7 +72,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.query = query
         self.password = password
         self.cookie = cookie
-        self.book_id = str(book_id)
+        self.book_id = str(book_id) if book_id else None
         self.book_name = ''
         self.book_title = ''
         self.output_directory = utils.mkdirp(
