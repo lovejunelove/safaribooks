@@ -72,7 +72,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.query = query
         self.password = password
         self.cookie = cookie
-        self.book_id = ModelBooks.get_a_book() if query is None and book_id is None else book_id
+        self.book_id = book_id
         self.book_name = ''
         self.book_title = ''
         self.output_directory = utils.mkdirp(
@@ -149,6 +149,12 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 headers={"content-type": "application/json"}
             )
         elif self.book_id:
+            yield scrapy.Request(
+                self.toc_url + self.book_id,
+                callback=self.parse_toc,
+            )
+        else:
+            self.book_id = ModelBooks.get_a_book()
             yield scrapy.Request(
                 self.toc_url + self.book_id,
                 callback=self.parse_toc,
