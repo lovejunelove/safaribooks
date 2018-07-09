@@ -8,6 +8,8 @@ import multiprocessing as mp
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
+from models import ModelBooks
+
 
 def download_epub(args):
     if not args.user and not args.cookie:
@@ -23,6 +25,13 @@ def download_epub(args):
             cookie = fp.read()
 
     def _crawl(queue):
+        if args.loop:
+            book_id = ModelBooks.get_a_book()
+            if not book_id:
+                print('There is no book in DB')
+                queue.put(None)
+                return
+
         process = CrawlerProcess(get_project_settings())
         ret = process.crawl(
             'SafariBooks',

@@ -153,12 +153,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 self.toc_url + self.book_id,
                 callback=self.parse_toc,
             )
-        else:
-            self.book_id = ModelBooks.get_a_book()
-            yield scrapy.Request(
-                self.toc_url + self.book_id,
-                callback=self.parse_toc,
-            )
 
     @with_transaction
     def save_books_in_db(self, books_dict):
