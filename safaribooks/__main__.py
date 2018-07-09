@@ -2,6 +2,7 @@ import argparse
 import glob
 import os
 import subprocess
+import logging
 from time import sleep
 import multiprocessing as mp
 
@@ -9,6 +10,14 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
 from models import ModelBooks
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter(fmt='%(asctime)s [%(module)s] %(levelname)s: %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 def download_epub(args):
@@ -28,22 +37,26 @@ def download_epub(args):
         if args.loop:
             book_id = ModelBooks.get_a_book()
             if not book_id:
-                print('There is no book in DB')
+                logger.info('There is no book in DB')
                 queue.put(None)
                 return
+        else:
+            book_id = str(args.book_id) if args.book_id else None
 
+        logger.info('Start scraping query: {}, book_id: {}'.format(args.query, book_id))
         process = CrawlerProcess(get_project_settings())
         ret = process.crawl(
             'SafariBooks',
             user=args.user,
             password=args.password,
             cookie=cookie,
-            book_id=str(args.book_id) if args.book_id else None,
+            book_id=book_id,
             output_directory=args.output_directory,
             query=args.query
         )
         process.start()
         queue.put(ret)
+        logger.info('Finish scraping query: {}, book_id: {}'.format(args.query, book_id))
 
     while True:
         q = mp.Queue()
