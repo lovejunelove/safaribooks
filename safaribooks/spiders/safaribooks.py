@@ -128,7 +128,9 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 with open(self.page_file) as fp:
                     page = fp.read().strip()
                     if page:
-                        page = int(page) + 1
+                        page = int(page)
+                        self._scraped_books = page * 10
+                        page += 1
 
             post_body = {
                 "query": self.query,
@@ -199,6 +201,8 @@ class SafariBooksSpider(scrapy.spiders.Spider):
 
     def query_books(self, post_body, response):
         response = json.loads(response.body)
+        if not response['results']:
+            return
         total_books = response['total']
         self._scraped_books += len(response['results'])
         books_dict = {}
