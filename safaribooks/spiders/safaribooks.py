@@ -48,6 +48,7 @@ def decode(s):
     except:
         return s
 
+
 class SafariBooksSpider(scrapy.spiders.Spider):
     search_url = 'https://www.safaribooksonline.com/api/v2/search/'
     toc_url = 'https://www.safaribooksonline.com/nest/epub/toc/?book_id='
@@ -60,13 +61,13 @@ class SafariBooksSpider(scrapy.spiders.Spider):
     sort_by_relevance = "relevance"
 
     def __init__(
-        self,
-        user,
-        password,
-        cookie,
-        book_id,
-        output_directory=None,
-        query=None
+            self,
+            user,
+            password,
+            cookie,
+            book_id,
+            output_directory=None,
+            query=None
     ):
         self.user = user
         self.query = query
@@ -74,7 +75,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.cookie = cookie
         self.book_id = book_id
         self.book_name = ''
-        self.book_title = ''
         self.output_directory = utils.mkdirp(
             output_directory or tempfile.mkdtemp()
         )
@@ -83,7 +83,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.info = {}
         self._stage_toc = False
         self.tmpdir = None
-        self._books_dict = {}
         self._scraped_books = 0
         self._initialize_tempdir()
 
@@ -101,16 +100,16 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             cookies = dict(x.strip().split('=') for x in self.cookie.split(';'))
 
             return scrapy.Request(url=self.host + 'home',
-                callback=self.after_login,
-                cookies=cookies,
-                headers={
-                    'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36'
-                })
+                                  callback=self.after_login,
+                                  cookies=cookies,
+                                  headers={
+                                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36'
+                                  })
 
         return scrapy.FormRequest.from_response(
-              response,
-              formdata={'email': self.user, 'password1': self.password},
-              callback=self.after_login
+            response,
+            formdata={'email': self.user, 'password1': self.password},
+            callback=self.after_login
         )
 
     def after_login(self, response):
@@ -194,8 +193,9 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         response = json.loads(response.body)
         total_books = response['total']
         self._scraped_books += len(response['results'])
+        books_dict = {}
         for book in response['results']:
-            self._books_dict[book['archive_id']] = book
+            books_dict[book['archive_id']] = book
         if self._scraped_books < min(total_books, self.MAX_NUMBER_OF_BOOKS):
             post_body['page'] += 1
             yield scrapy.Request(
@@ -205,8 +205,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 callback=partial(self.query_books, post_body),
                 headers={"content-type": "application/json"}
             )
-        else:
-            self.save_books_in_db(self._books_dict)
+            self.save_books_in_db(books_dict)
 
     def parse_cover_img(self, name, response):
         # inspect_response(response, self)
@@ -233,7 +232,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         for style_sheet in style_sheets:
             style_sheets_paths.append(style_sheet['full_path'])
             yield scrapy.Request(
-                style_sheet['url'], # I don't know when style_sheets will have multiple elements
+                style_sheet['url'],  # I don't know when style_sheets will have multiple elements
                 callback=partial(self.load_page_style, style_sheet['full_path'])
             )
 
@@ -345,8 +344,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         self.logger.info('Made archive {0}'.format(zip_path))
 
         self.epub_path = os.path.join(
-            self.output_directory,
-            '{0}-{1}.epub'.format(self.book_title, self.book_id),
+            self.output_directory, '{0}.epub'.format(self.book_id),
         )
         self.logger.info('Moving {0} to {1}'.format(zip_path, self.epub_path))
         shutil.move(zip_path, self.epub_path)

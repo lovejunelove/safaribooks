@@ -35,11 +35,12 @@ def download_epub(args):
 
     def _crawl(queue):
         if args.loop:
-            book_id = ModelBooks.get_a_book()
-            if not book_id:
+            book = ModelBooks.get_a_book()
+            if not book:
                 logger.info('There is no book in DB')
                 queue.put(None)
                 return
+            book_id = book.safari_book_id
         else:
             book_id = str(args.book_id) if args.book_id else None
 

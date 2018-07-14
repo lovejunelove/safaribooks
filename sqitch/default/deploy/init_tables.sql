@@ -5,7 +5,7 @@ BEGIN;
 CREATE TABLE books (
   id                    SERIAL       NOT NULL PRIMARY KEY,
   safari_book_id        VARCHAR(32)  NOT NULL,
-  status                SMALLINT     NOT NULL DEFAULT 0, -- 0 not downloaded, 1 downloaded
+  status                SMALLINT     NOT NULL DEFAULT 0, --  4, uploaded, 3 uploading, 2 downloaded, 1 downloading, 0 not downloaded
   reviews               INT          NOT NULL DEFAULT 0,
   rating                INT          NOT NULL DEFAULT 0,
   popularity            INT          NOT NULL DEFAULT 0,

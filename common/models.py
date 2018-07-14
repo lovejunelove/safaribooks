@@ -12,6 +12,8 @@ class BookStatus():
     NOT_DOWNLOADED = 0
     DOWNLOADING = 1
     DOWNLOADED = 2
+    UPLOADING = 3
+    UPLOADED = 4
 
 
 class ModelBooks(BASE):
@@ -19,7 +21,9 @@ class ModelBooks(BASE):
 
     id = Column(Integer, primary_key=True)
     safari_book_id = Column(VARCHAR(32), nullable=False)
-    status = Column(SMALLINT, nullable=False, default=0)  # 2 downloaded, 1 downloading, 0 not downloaded
+    status = Column(
+        SMALLINT, nullable=False, default=0
+    )  # 4, uploaded, 3 uploading, 2 downloaded, 1 downloading, 0 not downloaded
     reviews = Column(Integer, nullable=False, default=0)
     rating = Column(Integer, nullable=False, default=0)
     popularity = Column(Integer, nullable=False, default=0)
@@ -40,14 +44,14 @@ class ModelBooks(BASE):
 
     @staticmethod
     @with_transaction
-    def get_a_book():
-        model = SESSION.query(ModelBooks).filter(ModelBooks.status == BookStatus.NOT_DOWNLOADED).limit(1).one_or_none()
+    def get_a_book(status=BookStatus.NOT_DOWNLOADED, next_status=BookStatus.DOWNLOADING):
+        model = SESSION.query(ModelBooks).filter(ModelBooks.status == status).limit(1).one_or_none()
         if not model:
             return None
 
-        model.status = BookStatus.DOWNLOADING
+        model.status = next_status
         SESSION.flush()
-        return model.safari_book_id
+        return model
 
     @staticmethod
     @with_transaction
