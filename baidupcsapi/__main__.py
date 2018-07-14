@@ -3,6 +3,7 @@ import argparse
 import os
 import json
 from pprint import pprint
+import time
 import hashlib
 from baidupcsapi import PCS
 from common.models import ModelBooks, BookStatus
@@ -71,7 +72,9 @@ def func_upload(args, pcs):
         while True:
             book = ModelBooks.get_a_book(status=BookStatus.DOWNLOADED, next_status=BookStatus.UPLOADING)
             if not book:
-                return
+                logging.info('Sleep, no available books to upload now')
+                time.sleep(30)
+                continue
             path = os.path.join(args.path, '{}.epub'.format(book.safari_book_id))
             try:
                 upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title))
