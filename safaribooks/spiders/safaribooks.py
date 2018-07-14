@@ -128,7 +128,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 with open(self.page_file) as fp:
                     page = fp.read().strip()
                     if page:
-                        page = int(page)
+                        page = int(page) + 1
 
             post_body = {
                 "query": self.query,
