@@ -59,6 +59,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
     MAX_NUMBER_OF_BOOKS = 1000000
     sort_by_score = "report_score"
     sort_by_relevance = "relevance"
+    page_file = '.page'
 
     def __init__(
             self,
@@ -122,6 +123,13 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             return
 
         if self.query is not None:
+            page = 0
+            if os.path.exists(self.page_file):
+                with open(self.page_file) as fp:
+                    page = fp.read().strip()
+                    if page:
+                        page = int(page)
+
             post_body = {
                 "query": self.query,
                 "extended_publisher_data": "true",
@@ -138,7 +146,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 "publishers": [],
                 "languages": [],
                 "sort": self.sort_by_relevance,
-                "page": 0
+                "page": page
             }
             yield scrapy.Request(
                 self.search_url,
@@ -197,6 +205,10 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         for book in response['results']:
             books_dict[book['archive_id']] = book
         if self._scraped_books < min(total_books, self.MAX_NUMBER_OF_BOOKS):
+            self.save_books_in_db(books_dict)
+            with open(self.page_file, 'w') as fp:
+                fp.write('{}'.format(post_body['page']))
+
             post_body['page'] += 1
             yield scrapy.Request(
                 self.search_url,
@@ -205,7 +217,6 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 callback=partial(self.query_books, post_body),
                 headers={"content-type": "application/json"}
             )
-            self.save_books_in_db(books_dict)
 
     def parse_cover_img(self, name, response):
         # inspect_response(response, self)
