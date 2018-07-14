@@ -9,7 +9,11 @@ import traceback
 from functools import wraps
 
 from enum import Enum
-from urllib import quote_plus
+
+try:
+    from urllib import quote_plus
+except:
+    from urllib.parse import quote_plus
 
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
