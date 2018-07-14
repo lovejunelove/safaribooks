@@ -78,10 +78,10 @@ def func_upload(args, pcs):
             path = os.path.join(args.path, '{}.epub'.format(book.safari_book_id))
             try:
                 upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title))
-                status = BookStatus.DOWNLOADED
+                status = BookStatus.UPLOADED
             except BaseException as e:
                 logging.error("Fail, {}".format(str(e)))
-                status = BookStatus.UPLOADED
+                status = BookStatus.DOWNLOADED
             ModelBooks.finish(book.safari_book_id, status=status)
     elif os.path.isdir(args.path):
         upload_folder(args.path, args.folder, pcs)
