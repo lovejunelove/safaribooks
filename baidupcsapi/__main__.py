@@ -73,8 +73,12 @@ def func_upload(args, pcs):
             if not book:
                 return
             path = os.path.join(args.path, '{}.epub'.format(book.safari_book_id))
-            upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title))
-            ModelBooks.finish(book.safari_book_id, status=BookStatus.UPLOADED)
+            try:
+                upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title))
+                status = BookStatus.DOWNLOADED
+            except:
+                status = BookStatus.UPLOADED
+            ModelBooks.finish(book.safari_book_id, status=status)
     elif os.path.isdir(args.path):
         upload_folder(args.path, args.folder, pcs)
     else:
