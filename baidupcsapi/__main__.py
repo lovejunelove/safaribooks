@@ -4,8 +4,7 @@ import os
 import json
 from pprint import pprint
 import hashlib
-
-from application.api import PCS
+from baidupcsapi import PCS
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
