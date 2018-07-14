@@ -55,7 +55,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
     # allowed_domains = []
     start_urls = ['https://www.safaribooksonline.com/']
     host = 'https://www.safaribooksonline.com/'
-    MAX_NUMBER_OF_BOOKS = 100
+    MAX_NUMBER_OF_BOOKS = 1000000
     sort_by_score = "report_score"
     sort_by_relevance = "relevance"
 
