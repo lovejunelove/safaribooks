@@ -160,7 +160,8 @@ class SafariBooksSpider(scrapy.spiders.Spider):
         existed_book_ids = []
         for model in existed_models:
             tags = set(model.tags)
-            tags.add(self.query)
+            if self.query:
+                tags.add(self.query)
             model.tags = list(tags)
             existed_book_ids.append(model.safari_book_id)
 
@@ -179,7 +180,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
                 language=book.get('language', ''),
                 authors=book.get('authors', []),
                 publishers=book.get('publishers', []),
-                tags=[self.query],
+                tags=[self.query] if self.query else [],
                 description=book.get('description', ''),
                 url=book.get('url', ''),
                 web_url=book.get('web_url', ''),
