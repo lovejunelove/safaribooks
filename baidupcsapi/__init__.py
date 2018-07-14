@@ -10,8 +10,6 @@ import pickle
 import string
 import random
 import base64
-import platform
-import subprocess
 from urllib import parse as urlparse
 from urllib.parse import urlencode
 from hashlib import md5
@@ -51,17 +49,7 @@ def default_captcha_handler(image_url):
 
     filename = captcha_file.name
     print(filename)
-    os_name = platform.system()
-
-    if os_name == 'Windows':
-        subprocess.call([filename], shell=True)
-    elif os_name == 'Linux':
-        subprocess.call(['gvfs-open', filename])
-    elif os_name == 'Darwin':
-        subprocess.call(['open', filename])
-    else:
-        print("Please enter the verification code in:" + filename)
-
+    print("Please enter the verification code in:" + filename)
     verify_code = input('Input verify code > ')
 
     return verify_code
