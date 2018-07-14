@@ -122,7 +122,7 @@ class SafariBooksSpider(scrapy.spiders.Spider):
             self.logger.error('Something went wrong')
             return
 
-        if self.query:
+        if self.query is not None:
             post_body = {
                 "query": self.query,
                 "extended_publisher_data": "true",
