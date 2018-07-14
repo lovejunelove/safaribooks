@@ -17,7 +17,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.pool import QueuePool
 
-import settings
+import safaribooks.settings
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ def create_db_session(isolation_level=TransactionIsolationLevel.READ_WRITE):
     :rtype: Session
     """
     return get_session(
-        settings.DATABASE, isolation_level=isolation_level.value
+        safaribooks.settings.DATABASE, isolation_level=isolation_level.value
     )()
 
 

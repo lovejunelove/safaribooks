@@ -11,8 +11,8 @@ import scrapy
 from jinja2 import Template
 from bs4 import BeautifulSoup
 
-from ..db_session import SESSION, with_transaction
-from ..models import ModelBooks, BookStatus
+from common.db_session import SESSION, with_transaction
+from common.models import ModelBooks, BookStatus
 from .. import utils
 
 DEFAULT_STYLE = """

@@ -9,7 +9,7 @@ import multiprocessing as mp
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from models import ModelBooks
+from common.models import ModelBooks
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

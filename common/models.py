@@ -3,7 +3,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy import Column, DateTime, Integer, VARCHAR, TEXT, SMALLINT
 from sqlalchemy.ext.declarative import declarative_base
 
-from db_session import SESSION, with_transaction
+from common.db_session import SESSION, with_transaction
 
 BASE = declarative_base()
 
