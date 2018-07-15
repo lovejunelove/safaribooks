@@ -160,8 +160,8 @@ class PCSBase(object):
         """
 
         self.session = requests.session()
-        # self.session.mount('http', HTTPAdapter(max_retries=10))
-        # self.session.mount('https', HTTPAdapter(max_retries=10))
+        self.session.mount('http', HTTPAdapter(max_retries=10))
+        self.session.mount('https', HTTPAdapter(max_retries=10))
         self.username = username
         self.password = password
         self.user = {}
@@ -586,7 +586,7 @@ class PCS(PCSBase):
 
         params = {
             # 'dest_dir': dest_dir,
-            'path': '{}/{}'.format(dest_dir, filename),
+            'path': dest_dir,
             'ondup': ondup,
             'filename': filename
         }

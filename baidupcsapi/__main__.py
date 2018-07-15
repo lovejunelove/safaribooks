@@ -29,7 +29,7 @@ def parse_filename(path):
     return filename
 
 
-def upload_file(path, dest, pcs, filename=None):
+def upload_file(path, dest, pcs, filename=None, delete=False):
     def upload_callback(*args, **kwargs):
         progress = round(kwargs['progress'] * 100 / kwargs['size'], 2)
         logging.info('In progress, {}%, {}/{}, "{}" -> "{}"'.format(
@@ -59,19 +59,20 @@ def upload_file(path, dest, pcs, filename=None):
         pprint(data)
         md5 = data['md5']
         if md5 == fmd5.hexdigest():
-            os.remove(path)
+            if delete:
+                os.remove(path)
             logging.info('Finish, "{}" -> "{}"'.format(path, dest))
         else:
             logging.error('Fail, "{}" -> "{}"'.format(path, dest))
 
 
-def upload_folder(folder, dest, pcs):
+def upload_folder(folder, dest, pcs, delete=False):
     for i in os.listdir(folder):
         path = os.path.join(folder, i)
         if os.path.isdir(path):
-            upload_folder(path, dest, pcs)
+            upload_folder(path, dest, pcs, delete=delete)
         else:
-            upload_file(path, dest, pcs)
+            upload_file(path, dest, pcs, delete=delete)
 
 
 def func_upload(args, pcs):
@@ -84,16 +85,17 @@ def func_upload(args, pcs):
                 continue
             path = os.path.join(args.path, '{}.epub'.format(book.safari_book_id))
             try:
-                upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title))
+                upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title), delete=args.delete)
                 status = BookStatus.UPLOADED
             except BaseException as e:
                 logging.error("Fail, {}".format(str(e)))
                 status = BookStatus.DOWNLOADED
+
             ModelBooks.finish(book.safari_book_id, status=status)
     elif os.path.isdir(args.path):
-        upload_folder(args.path, args.folder, pcs)
+        upload_folder(args.path, args.folder, pcs, delete=args.delete)
     else:
-        upload_file(args.path, args.folder, pcs)
+        upload_file(args.path, args.folder, pcs, delete=args.delete)
 
 
 parser = argparse.ArgumentParser(
@@ -136,6 +138,11 @@ upload_parser.add_argument(
     '-l',
     '--loop',
     help='Upload file from db',
+    action="store_true"
+)
+upload_parser.add_argument(
+    '--delete',
+    help='Delete file after uploaded',
     action="store_true"
 )
 
