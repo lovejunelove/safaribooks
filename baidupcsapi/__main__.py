@@ -90,10 +90,7 @@ def func_upload(args, pcs):
                 continue
             path = os.path.join(args.path, '{}.epub'.format(book.safari_book_id))
             try:
-                title = re.sub(r'["%*/:<>?\\|~\s]', r'_', book.title)  # to be used for filename
-                if title.endswith('-'):
-                    title = title[:-1]
-                upload_file(path, args.folder, pcs, filename='{}.epub'.format(title), delete=args.delete)
+                upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.safari_book_id), delete=args.delete)
                 ModelBooks.finish(book.safari_book_id, status=BookStatus.UPLOADED)
             except BaseException as e:
                 logging.error("Fail, {}".format(str(e)))
