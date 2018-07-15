@@ -586,7 +586,7 @@ class PCS(PCSBase):
 
         params = {
             # 'dest_dir': dest_dir,
-            'path': dest_dir,
+            'path': os.path.join(dest_dir, filename),
             'ondup': ondup,
             'filename': filename
         }
