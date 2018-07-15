@@ -13,8 +13,7 @@ logging.basicConfig(level=logging.DEBUG,
                     datefmt='%a, %d %b %Y %H:%M:%S')
 
 
-def func_list(args):
-    pcs = PCS(username=args.username, password=args.password, cookie=args.cookie)
+def func_list(args, pcs):
     res = pcs.list_files(args.folder)
     pprint(json.loads(res.text))
 
@@ -30,7 +29,7 @@ def parse_filename(path):
     return filename
 
 
-def upload_file(path, dest, args, filename=None):
+def upload_file(path, dest, pcs, filename=None):
     def upload_callback(*args, **kwargs):
         progress = round(kwargs['progress'] * 100 / kwargs['size'], 2)
         logging.info('In progress, {}%, {}/{}, "{}" -> "{}"'.format(
@@ -44,7 +43,6 @@ def upload_file(path, dest, args, filename=None):
     with open(path, 'rb') as fp:
         fmd5 = hashlib.md5(fp.read())
     with open(path, 'rb') as fp:
-        pcs = PCS(username=args.username, password=args.password, cookie=args.cookie)
         res = pcs.upload(dest, fp, filename, callback=upload_callback)
         res.raise_for_status()
         data = json.loads(res.text)
@@ -67,16 +65,16 @@ def upload_file(path, dest, args, filename=None):
             logging.error('Fail, "{}" -> "{}"'.format(path, dest))
 
 
-def upload_folder(folder, dest, args):
+def upload_folder(folder, dest, pcs):
     for i in os.listdir(folder):
         path = os.path.join(folder, i)
         if os.path.isdir(path):
-            upload_folder(path, dest, args)
+            upload_folder(path, dest, pcs)
         else:
-            upload_file(path, dest, args)
+            upload_file(path, dest, pcs)
 
 
-def func_upload(args):
+def func_upload(args, pcs):
     if args.loop:
         while True:
             book = ModelBooks.get_a_book(status=BookStatus.DOWNLOADED, next_status=BookStatus.UPLOADING)
@@ -86,16 +84,16 @@ def func_upload(args):
                 continue
             path = os.path.join(args.path, '{}.epub'.format(book.safari_book_id))
             try:
-                upload_file(path, args.folder, args, filename='{}.epub'.format(book.title))
+                upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.title))
                 status = BookStatus.UPLOADED
             except BaseException as e:
                 logging.error("Fail, {}".format(str(e)))
                 status = BookStatus.DOWNLOADED
             ModelBooks.finish(book.safari_book_id, status=status)
     elif os.path.isdir(args.path):
-        upload_folder(args.path, args.folder, args)
+        upload_folder(args.path, args.folder, pcs)
     else:
-        upload_file(args.path, args.folder, args)
+        upload_file(args.path, args.folder, pcs)
 
 
 parser = argparse.ArgumentParser(
@@ -151,7 +149,8 @@ list_parser.set_defaults(func=func_list)
 
 def main():
     args = parser.parse_args()
-    args.func(args)
+    pcs = PCS(username=args.username, password=args.password, cookie=args.cookie)
+    args.func(args, pcs)
 
 
 if __name__ == '__main__':
