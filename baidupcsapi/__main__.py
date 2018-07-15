@@ -41,7 +41,7 @@ def upload_file(path, dest, pcs, filename=None, delete=False):
         logging.info('Already Uploaded, "{}" -> "{}"'.format(path, dest))
         return
 
-    logging.info('Start, "{}" -> "{}"'.format(path, dest))
+    logging.info('Start, "{}" -> "{}", delete: {}'.format(path, dest, delete))
 
     filename = filename or parse_filename(path)
 
