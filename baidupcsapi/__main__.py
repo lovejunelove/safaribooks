@@ -30,6 +30,12 @@ def parse_filename(path):
 
 
 def upload_file(path, dest, pcs, filename=None):
+    def upload_callback(*args, **kwargs):
+        progress = round(kwargs['progress'] * 100 / kwargs['size'], 2)
+        logging.info('In progress, {}%, {}/{}, "{}" -> "{}"'.format(
+            progress, kwargs['progress'], kwargs['size'], path, dest)
+        )
+
     logging.info('Start, "{}" -> "{}"'.format(path, dest))
 
     filename = filename or parse_filename(path)
@@ -37,7 +43,7 @@ def upload_file(path, dest, pcs, filename=None):
     with open(path, 'rb') as fp:
         fmd5 = hashlib.md5(fp.read())
     with open(path, 'rb') as fp:
-        res = pcs.upload(dest, fp, filename)
+        res = pcs.upload(dest, fp, filename, callback=upload_callback)
         res.raise_for_status()
         data = json.loads(res.text)
         """
