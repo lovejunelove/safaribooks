@@ -16,6 +16,7 @@ from hashlib import md5
 from zlib import crc32
 
 from requests.adapters import HTTPAdapter
+from requests.packages.urllib3 import Retry
 from requests_toolbelt import MultipartEncoder
 import requests
 import rsa
@@ -160,8 +161,17 @@ class PCSBase(object):
         """
 
         self.session = requests.session()
-        self.session.mount('http', HTTPAdapter(max_retries=10))
-        self.session.mount('https', HTTPAdapter(max_retries=10))
+        retry_count = 3
+        retry = Retry(
+            total=retry_count,
+            read=retry_count,
+            connect=retry_count,
+            backoff_factor=0.3,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
+
         self.username = username
         self.password = password
         self.user = {}
