@@ -14,6 +14,8 @@ from urllib import parse as urlparse
 from urllib.parse import urlencode
 from hashlib import md5
 from zlib import crc32
+
+from requests.adapters import HTTPAdapter
 from requests_toolbelt import MultipartEncoder
 import requests
 import rsa
@@ -158,6 +160,8 @@ class PCSBase(object):
         """
 
         self.session = requests.session()
+        self.session.mount('http', HTTPAdapter(max_retries=10))
+        self.session.mount('https', HTTPAdapter(max_retries=10))
         self.username = username
         self.password = password
         self.user = {}
