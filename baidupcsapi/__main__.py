@@ -48,7 +48,7 @@ def upload_file(path, dest, pcs, filename=None, delete=False):
     with open(path, 'rb') as fp:
         fmd5 = hashlib.md5(fp.read())
     with open(path, 'rb') as fp:
-        res = pcs.upload(dest, fp, filename, callback=upload_callback, ondup='overwrite')
+        res = pcs.upload(dest, fp, filename, callback=upload_callback, ondup='overwrite', timeout=60)
         res.raise_for_status()
         data = json.loads(res.text)
         """
