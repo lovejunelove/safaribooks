@@ -37,6 +37,10 @@ def upload_file(path, dest, pcs, filename=None, delete=False):
             progress, kwargs['progress'], kwargs['size'], path, dest)
         )
 
+    if not os.path.exists(path):
+        logging.info('Already Uploaded, "{}" -> "{}"'.format(path, dest))
+        return
+
     logging.info('Start, "{}" -> "{}"'.format(path, dest))
 
     filename = filename or parse_filename(path)
