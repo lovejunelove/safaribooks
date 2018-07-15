@@ -1,4 +1,5 @@
 import logging
+import re
 import argparse
 import os
 import json
@@ -39,6 +40,7 @@ def upload_file(path, dest, pcs, filename=None):
     logging.info('Start, "{}" -> "{}"'.format(path, dest))
 
     filename = filename or parse_filename(path)
+    filename = re.sub(r'["%*/:<>?\\|~\s]', r'_', filename)  # to be used for filename
 
     with open(path, 'rb') as fp:
         fmd5 = hashlib.md5(fp.read())
