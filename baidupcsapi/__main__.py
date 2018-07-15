@@ -38,6 +38,7 @@ def upload_file(path, dest, pcs, filename=None):
         fmd5 = hashlib.md5(fp.read())
     with open(path, 'rb') as fp:
         res = pcs.upload(dest, fp, filename)
+        res.raise_for_status()
         data = json.loads(res.text)
         """
         {'ctime': 1531534213,
