@@ -160,8 +160,8 @@ class PCSBase(object):
         """
 
         self.session = requests.session()
-        self.session.mount('http', HTTPAdapter(max_retries=10))
-        self.session.mount('https', HTTPAdapter(max_retries=10))
+        # self.session.mount('http', HTTPAdapter(max_retries=10))
+        # self.session.mount('https', HTTPAdapter(max_retries=10))
         self.username = username
         self.password = password
         self.user = {}
