@@ -161,12 +161,12 @@ class PCSBase(object):
         """
 
         self.session = requests.session()
-        retry_count = 3
+        retry_count = 5
         retry = Retry(
             total=retry_count,
             read=retry_count,
             connect=retry_count,
-            backoff_factor=0.3,
+            backoff_factor=1,
         )
         adapter = HTTPAdapter(max_retries=retry)
         self.session.mount('http://', adapter)
