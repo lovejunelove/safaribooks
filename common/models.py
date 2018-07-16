@@ -37,6 +37,7 @@ class ModelBooks(BASE):
     tags = Column(postgresql.JSONB, default=[])
     url = Column(VARCHAR(4096), nullable=False, default='')
     web_url = Column(VARCHAR(4096), nullable=False, default='')
+    updated_time = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_time = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -45,7 +46,8 @@ class ModelBooks(BASE):
     @staticmethod
     @with_transaction
     def get_a_book(status=BookStatus.NOT_DOWNLOADED, next_status=BookStatus.DOWNLOADING):
-        model = SESSION.query(ModelBooks).filter(ModelBooks.status == status).limit(1).one_or_none()
+        model = SESSION.query(ModelBooks).filter(ModelBooks.status == status).order_by(
+            ModelBooks.updated_time).limit(1).one_or_none()
         if not model:
             return None
 

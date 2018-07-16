@@ -19,6 +19,7 @@ CREATE TABLE books (
   tags                  JSONB,
   url                   VARCHAR(4096) NOT NULL DEFAULT '',
   web_url               VARCHAR(4096) NOT NULL DEFAULT '',
+  updated_time          TIMESTAMP WITHOUT TIME ZONE DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   created_time          TIMESTAMP WITHOUT TIME ZONE DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );
 CREATE UNIQUE INDEX books_safari_book_id ON books (safari_book_id);
