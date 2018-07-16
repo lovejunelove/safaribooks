@@ -46,7 +46,7 @@ class ModelBooks(BASE):
     @staticmethod
     @with_transaction
     def get_a_book(status=BookStatus.NOT_DOWNLOADED, next_status=BookStatus.DOWNLOADING):
-        model = SESSION.query(ModelBooks).filter(ModelBooks.status == status).order_by(
+        model = SESSION.query(ModelBooks).filter(ModelBooks.status == status).with_for_update().order_by(
             ModelBooks.updated_time).limit(1).one_or_none()
         if not model:
             return None
