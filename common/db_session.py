@@ -103,7 +103,7 @@ def create_db_session(isolation_level=TransactionIsolationLevel.READ_WRITE):
     :rtype: Session
     """
     return get_session(
-        safaribooks.settings.DATABASE, isolation_level=isolation_level.value
+        safaribooks.settings.DATABASE, isolation_level=isolation_level.value, pool_size=3
     )()
 
 
