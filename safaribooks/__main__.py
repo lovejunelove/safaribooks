@@ -64,7 +64,7 @@ def download_epub(args):
         p = mp.Process(target=_crawl, args=(q,))
         p.start()
         q.get()
-        p.join(timeout=600)
+        p.join(timeout=1800)
         sleep(1)
 
         if not args.loop:

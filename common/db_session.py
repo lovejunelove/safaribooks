@@ -43,7 +43,7 @@ def get_connection_string(db_conf):
 
 
 def get_session(db_conf, debug=False, application_name="default", statement_timeout=5000,
-                pool_recycle=1800, pool_size=5, isolation_level=None):
+                pool_recycle=-1, pool_size=1, isolation_level=None):
     """Get session
 
     :param dict db_conf: a dict to describe the config of database.
@@ -102,9 +102,7 @@ def create_db_session(isolation_level=TransactionIsolationLevel.READ_WRITE):
     :return: db session
     :rtype: Session
     """
-    return get_session(
-        safaribooks.settings.DATABASE, isolation_level=isolation_level.value, pool_size=3
-    )()
+    return get_session(safaribooks.settings.DATABASE, isolation_level=isolation_level.value)()
 
 
 SESSION = create_db_session()  # type: Session
