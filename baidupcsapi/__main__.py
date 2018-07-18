@@ -68,7 +68,7 @@ def upload_file(path, dest, pcs, filename=None, delete=False):
                 os.remove(path)
             logging.info('Finish, "{}" -> "{}"'.format(path, dest))
         else:
-            logging.error('Fail, "{}" -> "{}"'.format(path, dest))
+            logging.error('Fail, "{}" -> "{}", md5 does not match'.format(path, dest))
 
 
 def upload_folder(folder, dest, pcs, delete=False):
@@ -94,7 +94,7 @@ def func_upload(args, pcs):
                 upload_file(path, args.folder, pcs, filename='{}.epub'.format(book.safari_book_id), delete=args.delete)
                 finish_status = BookStatus.UPLOADED
             except BaseException as e:
-                logging.error("Fail, {}".format(str(e)))
+                logging.error("Fail, {}".format(str(e)), exc_info=True)
             finally:
                 ModelBooks.finish(book.safari_book_id, status=finish_status)
 
