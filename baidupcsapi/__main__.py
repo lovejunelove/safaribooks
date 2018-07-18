@@ -1,5 +1,4 @@
 import logging
-import re
 import argparse
 import os
 import json
@@ -46,7 +45,12 @@ def upload_file(path, dest, pcs, filename=None, delete=False):
     filename = filename or parse_filename(path)
 
     with open(path, 'rb') as fp:
-        fmd5 = hashlib.md5(fp.read())
+        block_size = 4096
+        fmd5 = hashlib.md5()
+        buff = fp.read(block_size)
+        while buff:
+            fmd5.update(buff)
+            buff = fp.read(block_size)
     with open(path, 'rb') as fp:
         res = pcs.upload(dest, fp, filename, callback=upload_callback, ondup='overwrite', timeout=300)
         res.raise_for_status()
