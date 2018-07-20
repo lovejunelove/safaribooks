@@ -10,6 +10,7 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
 BOT_NAME = 'safaribooks'
+LOG_LEVEL = 'DEBUG'
 
 SPIDER_MODULES = ['safaribooks.spiders']
 NEWSPIDER_MODULE = 'safaribooks.spiders'
