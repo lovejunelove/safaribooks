@@ -59,12 +59,14 @@ def download_epub(args):
         queue.put(ret)
         logger.info('Finish scraping query: {}, book_id: {}'.format(args.query, book_id))
 
+    q = mp.Queue()
     while True:
-        q = mp.Queue()
+        logger.info('Start new process')
         p = mp.Process(target=_crawl, args=(q,))
         p.start()
-        q.get()
-        p.join(timeout=1800)
+        ret_val = q.get()
+        p.join()
+        logger.info('Finish process, {}'.format(ret_val))
         sleep(1)
 
         if not args.loop:
