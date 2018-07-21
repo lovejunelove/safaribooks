@@ -33,12 +33,11 @@ def download_epub(args):
         with open(args.cookie) as fp:
             cookie = fp.read()
 
-    def _crawl(queue):
+    def _crawl():
         if args.loop:
             book = ModelBooks.get_a_book()
             if not book:
                 logger.info('There is no book in DB')
-                queue.put(None)
                 return
             book_id = book.safari_book_id
         else:
@@ -56,17 +55,14 @@ def download_epub(args):
             query=args.query
         )
         process.start()
-        queue.put(ret)
-        logger.info('Finish scraping query: {}, book_id: {}'.format(args.query, book_id))
+        logger.info('Finish scraping query: {}, book_id: {}, ret: {}'.format(args.query, book_id, ret))
 
-    q = mp.Queue()
     while True:
-        logger.info('Start new process')
-        p = mp.Process(target=_crawl, args=(q,))
+        p = mp.Process(target=_crawl)
         p.start()
-        ret_val = q.get()
+        logger.info('Start process, {}'.format(p.pid))
         p.join()
-        logger.info('Finish process, {}'.format(ret_val))
+        logger.info('Finish process, {}'.format(p.pid))
         sleep(1)
 
         if not args.loop:
