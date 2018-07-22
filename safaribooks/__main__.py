@@ -43,7 +43,7 @@ def download_epub(args):
         else:
             book_id = str(args.book_id) if args.book_id else None
 
-        logger.info('Start scraping query: {}, book_id: {}'.format(args.query, book_id))
+        logger.info('Start scraping, book_id: {}'.format(book_id))
         process = CrawlerProcess(get_project_settings())
         ret = process.crawl(
             'SafariBooks',
@@ -55,7 +55,7 @@ def download_epub(args):
             query=args.query
         )
         process.start()
-        logger.info('Finish scraping query: {}, book_id: {}, ret: {}'.format(args.query, book_id, ret))
+        logger.info('Finish scraping, book_id: {}, ret: {}'.format(book_id, ret))
 
     while True:
         p = mp.Process(target=_crawl)
